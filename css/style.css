@@ -1,0 +1,11 @@
+/* El mapa necesita altura explícita para verse */
+#mapa {
+  width: 100%;      /* ocupa todo el ancho */
+  height: 100vh;    /* 100vh = altura completa de la pantalla */
+}
+
+/* Quita márgenes del body para que el mapa llene todo */
+body {
+  margin: 0;
+  padding: 0;
+}

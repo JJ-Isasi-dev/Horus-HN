@@ -1,0 +1,40 @@
+{
+  "colonias": [
+    {
+      "id": 1,
+      "nombre": "Colonia Kennedy",
+      "lat": 14.06479,
+      "lng": -87.17872,
+      "tipo": "ms13",
+      "severidad": 3,
+      "descripcion": "Dominio MS-13 confirmado",
+      "fuente": "DIPAMCO",
+      "fecha": "2026-03-01",
+      "medio": "La Tribuna"
+    },
+    {
+      "id": 2,
+      "nombre": "La Laguna",
+      "lat": 14.10635,
+      "lng": -87.22999,
+      "tipo": "b18",
+      "severidad": 3,
+      "descripcion": "Zona critica Barrio 18",
+      "fuente": "ICN Investiga",
+      "fecha": "2026-01-10",
+      "medio": "ICN Investiga"
+    },
+    {
+      "id": 3,
+      "nombre": "Colonia Villa Nueva Suyapa",
+      "lat": 14.07717,
+      "lng": -87.15388,
+      "tipo": "mixta",
+      "severidad": 3,
+      "descripcion": "MS-13 + B18 + Los Benjamines",
+      "fuente": "ICN Investiga",
+      "fecha": "2026-02-12",
+      "medio": "Proceso Digital"
+    }
+  ]
+}
