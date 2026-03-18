@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Horus — Ingresar datos</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: sans-serif;
+      background: #0a0e17;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .card {
+      background: #111827;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 28px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .card h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #f97316;
+    }
+
+    .card .sub {
+      font-size: 11px;
+      color: #64748b;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 5px;
+      margin-top: 14px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 9px 12px;
+      background: #1a2235;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 7px;
+      color: #e2e8f0;
+      font-family: sans-serif;
+      font-size: 13px;
+      outline: none;
+      transition: border .15s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #f97316;
+    }
+
+    select option { background: #111827; }
+
+    textarea { height: 72px; resize: none; line-height: 1.5; }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .coords-tip {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 5px;
+      line-height: 1.5;
+    }
+
+    .coords-tip a {
+      color: #f97316;
+      text-decoration: none;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 11px;
+      background: #f97316;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background .15s;
+    }
+
+    button[type="submit"]:hover { background: #ea6a00; }
+
+    #mensaje {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 10px;
+      min-height: 20px;
+    }
+
+    .btn-volver {
+      display: block;
+      text-align: center;
+      margin-top: 14px;
+      font-size: 11px;
+      color: #64748b;
+      text-decoration: none;
+      transition: color .15s;
+    }
+
+    .btn-volver:hover { color: #e2e8f0; }
+
+    .lista-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin: 24px 0 10px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .zona-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 7px;
+      margin-bottom: 6px;
+      font-size: 11px;
+    }
+
+    .zona-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .zona-nombre { flex: 1; font-weight: 500; }
+    .zona-tipo { color: #64748b; font-size: 10px; }
+
+    .btn-eliminar {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 4px;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <h1>🗺 HORUS HN</h1>
+  <div class="sub">Ingresá una nueva zona de riesgo</div>
+
+  <form id="form-zona">
+
+    <label>Nombre de colonia / barrio</label>
+    <input type="text" id="nombre" placeholder="Ej: Col. Kennedy" required>
+
+    <div class="row">
+      <div>
+        <label>Latitud</label>
+        <input type="number" id="lat" placeholder="14.0940" step="0.00001" required>
+      </div>
+      <div>
+        <label>Longitud</label>
+        <input type="number" id="lng" placeholder="-87.2300" step="0.00001" required>
+      </div>
+    </div>
+
+    <div class="coords-tip">
+      💡 Para obtener coordenadas: abrí
+      <a href="https://maps.google.com" target="_blank">Google Maps</a>,
+      buscá la colonia, clic derecho sobre ella → el primer número es latitud, el segundo longitud.
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Tipo de amenaza</label>
+        <select id="tipo">
+          <option value="ms13">MS-13</option>
+          <option value="b18">Barrio 18</option>
+          <option value="mixta">Zona mixta</option>
+          <option value="narco">Narco / CO</option>
+          <option value="homicidio">Homicidios</option>
+          <option value="robo">Robos / Asaltos</option>
+        </select>
+      </div>
+      <div>
+        <label>Severidad</label>
+        <select id="severidad">
+          <option value="1">1 — Baja</option>
+          <option value="2" selected>2 — Media</option>
+          <option value="3">3 — Crítica</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Fuente oficial</label>
+    <select id="fuente">
+      <option>SEDS</option>
+      <option>ONV-UNAH</option>
+      <option>DIPAMCO</option>
+      <option>Ministerio Público</option>
+      <option>Policía Nacional</option>
+      <option>El Heraldo</option>
+      <option>La Tribuna</option>
+      <option>Proceso Digital</option>
+      <option>ICN Investiga</option>
+      <option>Otro</option>
+    </select>
+
+    <label>Medio / nombre de la noticia</label>
+    <input type="text" id="medio" placeholder="La Tribuna, 18/02/2026">
+
+    <label>Descripción</label>
+    <textarea id="descripcion" placeholder="Describí brevemente la situación..."></textarea>
+
+    <button type="submit">+ Guardar zona</button>
+    <div id="mensaje"></div>
+
+  </form>
+
+  <div class="lista-title">Zonas guardadas ({{ total }})</div>
+  <div id="lista-zonas"></div>
+
+  <a class="btn-volver" href="index.html">← Volver al mapa</a>
+
+</div>
+
+<script>
+  const COLORES = {
+    ms13:'#ef4444', b18:'#3b82f6', mixta:'#f59e0b',
+    narco:'#22c55e', homicidio:'#dc2626', robo:'#a855f7'
+  };
+  const ETIQUETAS = {
+    ms13:'MS-13', b18:'Barrio 18', mixta:'Zona mixta',
+    narco:'Narco/CO', homicidio:'Homicidio', robo:'Robo/Asalto'
+  };
+
+  // Carga las zonas guardadas en localStorage
+  function cargarZonas() {
+    return JSON.parse(localStorage.getItem('zonas') || '[]');
+  }
+
+  // Guarda el array de zonas en localStorage
+  function guardarZonas(zonas) {
+    localStorage.setItem('zonas', JSON.stringify(zonas));
+  }
+
+  // Muestra la lista de zonas guardadas
+  function renderLista() {
+    const zonas = cargarZonas();
+    const lista = document.getElementById('lista-zonas');
+
+    // Actualiza el contador en el título
+    document.querySelector('.lista-title').textContent =
+      'Zonas guardadas (' + zonas.length + ')';
+
+    if (zonas.length === 0) {
+      lista.innerHTML = '<div style="color:#64748b;font-size:11px;padding:8px 0">Todavía no guardaste ninguna zona.</div>';
+      return;
+    }
+
+    lista.innerHTML = zonas.map(function(z, i) {
+      return '<div class="zona-item">' +
+        '<div class="zona-dot" style="background:' + COLORES[z.tipo] + '"></div>' +
+        '<div class="zona-nombre">' + z.nombre + '</div>' +
+        '<div class="zona-tipo">' + ETIQUETAS[z.tipo] + '</div>' +
+        '<button class="btn-eliminar" onclick="eliminar(' + i + ')" title="Eliminar">✕</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Elimina una zona por índice
+  function eliminar(i) {
+    const zonas = cargarZonas();
+    zonas.splice(i, 1);
+    guardarZonas(zonas);
+    renderLista();
+  }
+
+  // Cuando se envía el formulario
+  document.getElementById('form-zona').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const nombre = document.getElementById('nombre').value.trim();
+    const lat    = parseFloat(document.getElementById('lat').value);
+    const lng    = parseFloat(document.getElementById('lng').value);
+
+    if (!nombre || isNaN(lat) || isNaN(lng)) {
+      document.getElementById('mensaje').style.color = '#ef4444';
+      document.getElementById('mensaje').textContent = '⚠ Completá nombre y coordenadas';
+      return;
+    }
+
+    const nueva = {
+      id:          Date.now(),
+      nombre:      nombre,
+      lat:         lat,
+      lng:         lng,
+      tipo:        document.getElementById('tipo').value,
+      severidad:   parseInt(document.getElementById('severidad').value),
+      fuente:      document.getElementById('fuente').value,
+      medio:       document.getElementById('medio').value,
+      descripcion: document.getElementById('descripcion').value,
+      fecha:       new Date().toISOString().split('T')[0]
+    };
+
+    const zonas = cargarZonas();
+    zonas.push(nueva);
+    guardarZonas(zonas);
+
+    document.getElementById('mensaje').style.color = '#22c55e';
+    document.getElementById('mensaje').textContent = '✅ Zona guardada: ' + nombre;
+
+    // Limpia el formulario
+    document.getElementById('form-zona').reset();
+
+    renderLista();
+
+    setTimeout(function() {
+      document.getElementById('mensaje').textContent = '';
+    }, 3000);
+  });
+
+  // Al cargar la página mostramos las zonas existentes
+  renderLista();
+</script>
+
+</body>
+</html>

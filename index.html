@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Horus HN — Sistema de Análisis de Zona de Riesgo</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #060a12;
+  --bg2:      #0d1420;
+  --bg3:      #121c2e;
+  --bg4:      #1a2540;
+  --border:   rgba(255,255,255,0.06);
+  --border2:  rgba(255,255,255,0.12);
+  --text:     #e2e8f0;
+  --muted:    #4a5568;
+  --muted2:   #718096;
+  --accent:   #00d4ff;
+  --accent2:  #0090b8;
+  --ms13:     #ef4444;
+  --b18:      #3b82f6;
+  --mixta:    #f59e0b;
+  --narco:    #22c55e;
+  --homicidio:#dc2626;
+  --robo:     #a855f7;
+  --mono:     'JetBrains Mono', monospace;
+  --title:    'Rajdhani', sans-serif;
+  --body:     'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--body);
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── TOPBAR ─────────────────────────────────────── */
+#topbar {
+  height: 52px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border2);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1000;
+}
+
+/* Línea de acento arriba */
+#topbar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent 60%);
+}
+
+#logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  border-right: 1px solid var(--border2);
+  height: 100%;
+}
+
+#logo .logo-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+#logo .logo-text .title {
+  font-family: var(--title);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: #fff;
+  line-height: 1;
+}
+
+#logo .logo-text .sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--accent);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+#topbar-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+}
+
+.layer-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 4px;
+  border: 1px solid;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: .04em;
+  transition: all .2s;
+  -webkit-user-select: none; user-select: none;
+}
+
+.layer-chip .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.layer-chip.off { opacity: .3; }
+.layer-chip.off:hover { opacity: .6; }
+
+#topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-left: 1px solid var(--border2);
+  height: 100%;
+}
+
+.tb-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--border2);
+  background: var(--bg3);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tb-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.tb-btn.primary {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.tb-btn.primary:hover { background: #00b8d9; }
+
+#clock {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted2);
+  min-width: 70px;
+  text-align: right;
+}
+
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 #22c55e55} 50%{opacity:.6;box-shadow:0 0 0 4px #22c55e00} }
+
+/* ── MAIN ──────────────────────────────────────── */
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── MAPA ──────────────────────────────────────── */
+#map-wrap {
+  flex: 1;
+  position: relative;
+}
+
+#mapa { width: 100%; height: 100%; }
+
+/* Leyenda flotante */
+#legend {
+  position: absolute;
+  bottom: 24px;
+  left: 16px;
+  z-index: 500;
+  background: rgba(6, 10, 18, 0.92);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px 14px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+
+#legend .leg-title {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted2);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 11px;
+  color: var(--text);
+  cursor: pointer;
+  transition: opacity .15s;
+}
+
+.leg-item:last-child { margin-bottom: 0; }
+.leg-item:hover { opacity: .7; }
+
+.leg-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Contador flotante */
+#map-stats {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 500;
+  display: flex;
+  gap: 8px;
+}
+
+.stat-pill {
+  background: rgba(6,10,18,0.9);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat-pill .val {
+  font-size: 16px;
+  font-weight: 500;
+  color: #fff;
+  line-height: 1;
+}
+
+.stat-pill .lbl {
+  font-size: 9px;
+  color: var(--muted2);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* ── SIDEBAR ───────────────────────────────────── */
+#sidebar {
+  width: 290px;
+  border-left: 1px solid var(--border2);
+  background: var(--bg2);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+#sidebar-header {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#sidebar-header .sh-title {
+  font-family: var(--title);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+#search-box {
+  width: 100%;
+  padding: 7px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 11px;
+  outline: none;
+  transition: border .15s;
+}
+
+#search-box:focus { border-color: var(--accent); }
+#search-box::placeholder { color: var(--muted); }
+
+#sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+#sidebar-list::-webkit-scrollbar { width: 3px; }
+#sidebar-list::-webkit-scrollbar-track { background: transparent; }
+#sidebar-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.col-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 3px solid;
+  background: var(--bg3);
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: all .15s;
+  border-top: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.col-card:hover { background: var(--bg4); border-left-width: 4px; }
+
+.col-card .cc-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.col-card .cc-info { flex: 1; min-width: 0; }
+
+.col-card .cc-name {
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+
+.col-card .cc-meta {
+  font-size: 9px;
+  color: var(--muted2);
+  font-family: var(--mono);
+  margin-top: 1px;
+}
+
+.col-card .cc-sev {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Stats bar por tipo */
+#type-bars {
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.type-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  font-size: 10px;
+}
+
+.type-row:last-child { margin-bottom: 0; }
+
+.type-label {
+  font-family: var(--mono);
+  color: var(--muted2);
+  min-width: 72px;
+  font-size: 9px;
+}
+
+.type-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--bg4);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.type-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .5s;
+}
+
+.type-count {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text);
+  min-width: 18px;
+  text-align: right;
+}
+
+/* ── STATUS BAR ────────────────────────────────── */
+#statusbar {
+  height: 26px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 14px;
+  flex-shrink: 0;
+}
+
+.sb-item {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: .03em;
+}
+
+.sb-item .sb-val { color: var(--muted2); }
+
+/* Leaflet popup oscuro */
+.leaflet-popup-content-wrapper {
+  background: rgba(13,20,32,0.97) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+  color: #e2e8f0 !important;
+}
+
+.leaflet-popup-tip { background: rgba(13,20,32,0.97) !important; }
+.leaflet-popup-close-button { color: #64748b !important; }
+
+/* ── PANTALLA DE CARGA ──────────────────────────── */
+#loader {
+  position: fixed; inset: 0; background: #060a12;
+  z-index: 9999; display: flex; align-items: center;
+  justify-content: center; flex-direction: column;
+  transition: opacity .7s ease, visibility .7s ease;
+}
+#loader.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+.ld-logo-icon {
+  width: 64px; height: 64px; background: var(--accent);
+  border-radius: 14px; display: flex; align-items: center;
+  justify-content: center; font-size: 32px; margin-bottom: 16px;
+  animation: ldGlow 2s ease-in-out infinite;
+}
+@keyframes ldGlow {
+  0%,100%{box-shadow:0 0 20px #00d4ff55} 50%{box-shadow:0 0 60px #00d4ffaa}
+}
+.ld-title {
+  font-family: 'Rajdhani', sans-serif; font-size: 32px; font-weight: 700;
+  letter-spacing: .1em; color: #fff;
+  animation: ldFD .6s ease both;
+}
+.ld-sub {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--accent); letter-spacing: .12em; text-transform: uppercase;
+  margin-bottom: 32px; animation: ldFD .6s ease .2s both;
+}
+@keyframes ldFD { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+.ld-scan {
+  width: 360px; height: 1px;
+  background: linear-gradient(90deg,transparent,var(--accent),transparent);
+  margin-bottom: 24px; animation: ldScan 2s ease-in-out infinite;
+}
+@keyframes ldScan {
+  0%{transform:scaleX(0);opacity:0} 50%{transform:scaleX(1);opacity:1} 100%{transform:scaleX(0);opacity:0}
+}
+.ld-steps { width: 360px; margin-bottom: 24px; }
+.ld-step {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+  opacity: 0; animation: ldStepIn .4s ease both;
+}
+.ld-step:nth-child(1){animation-delay:.3s}
+.ld-step:nth-child(2){animation-delay:.8s}
+.ld-step:nth-child(3){animation-delay:1.3s}
+.ld-step:nth-child(4){animation-delay:1.8s}
+@keyframes ldStepIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
+.ld-step-icon {
+  width:26px;height:26px;border-radius:5px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;flex-shrink:0;
+}
+.ld-step-label { flex:1; font-family:'JetBrains Mono',monospace; font-size:10px; color:#64748b; }
+.ld-step-bar { width:100px;height:3px;background:#0d1420;border-radius:2px;overflow:hidden; }
+.ld-step-fill { height:100%;border-radius:2px;animation:ldBar 1s ease both; }
+.ld-step:nth-child(1) .ld-step-fill{animation-delay:.5s}
+.ld-step:nth-child(2) .ld-step-fill{animation-delay:1.0s}
+.ld-step:nth-child(3) .ld-step-fill{animation-delay:1.5s}
+.ld-step:nth-child(4) .ld-step-fill{animation-delay:2.0s}
+@keyframes ldBar{from{width:0}to{width:100%}}
+.ld-step-ok {
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:#22c55e;
+  opacity:0;animation:ldOk .3s ease both;
+}
+.ld-step:nth-child(1) .ld-step-ok{animation-delay:1.5s}
+.ld-step:nth-child(2) .ld-step-ok{animation-delay:2.0s}
+.ld-step:nth-child(3) .ld-step-ok{animation-delay:2.5s}
+.ld-step:nth-child(4) .ld-step-ok{animation-delay:3.0s}
+@keyframes ldOk{to{opacity:1}}
+.ld-progress-wrap { width:360px; }
+.ld-progress-label { font-family:'JetBrains Mono',monospace;font-size:9px;color:#4a5568;margin-bottom:6px;letter-spacing:.05em; }
+.ld-progress-track { height:2px;background:#0d1420;border-radius:1px;overflow:hidden; }
+.ld-progress-bar {
+  height:100%;background:linear-gradient(90deg,var(--accent),#0090b8);
+  border-radius:1px;animation:ldProg 3.4s ease both;animation-delay:.3s;
+}
+@keyframes ldProg{from{width:0}to{width:100%}}
+
+/* ── RESPONSIVE / MOBILE ─────────────────────────── */
+@media (max-width: 768px) {
+  #sidebar { display: none; }
+  #topbar-center { gap: 4px; padding: 0 8px; }
+  .layer-chip { padding: 3px 7px; font-size: 9px; }
+  .layer-chip .dot { width: 6px; height: 6px; }
+  #topbar-right { padding: 0 8px; gap: 6px; }
+  #logo { padding: 0 12px; gap: 8px; }
+  #logo .logo-text .title { font-size: 15px; }
+  #logo .logo-text .sub { display: none; }
+  #map-stats { top: 8px; left: 8px; gap: 5px; }
+  .stat-pill { padding: 5px 8px; }
+  .stat-pill .val { font-size: 13px; }
+  .stat-pill .lbl { font-size: 8px; }
+  #legend { bottom: 16px; left: 8px; padding: 8px 10px; }
+  .leg-item { font-size: 10px; }
+  .ld-steps { width: 90vw; }
+  .ld-progress-wrap { width: 90vw; }
+  .ld-scan { width: 90vw; }
+  .ld-title { font-size: 24px; }
+}
+
+@media (max-width: 480px) {
+  #topbar-center { display: none; }
+  #statusbar { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- PANTALLA DE CARGA -->
+<div id="loader">
+  <div class="ld-logo-icon">&#128737;</div>
+  <div class="ld-title">HORUS HN</div>
+  <div class="ld-sub">Iniciando sistema de análisis de Zona de Riesgo</div>
+  <div class="ld-scan"></div>
+  <div class="ld-steps">
+    <div class="ld-step">
+      <div class="ld-step-icon" style="background:#ef444420">&#128506;</div>
+      <div class="ld-step-label">Cargando polígonos DC...</div>
+      <div class="ld-step-bar"><div class="ld-step-fill" style="background:#ef4444"></div></div>
+      <div class="ld-step-ok">&#10003; OK</div>
+    </div>
+    <div class="ld-step">
+      <div class="ld-step-icon" style="background:#3b82f620">&#128225;</div>
+      <div class="ld-step-label">Conectando fuentes SEDS...</div>
+      <div class="ld-step-bar"><div class="ld-step-fill" style="background:#3b82f6"></div></div>
+      <div class="ld-step-ok">&#10003; OK</div>
+    </div>
+    <div class="ld-step">
+      <div class="ld-step-icon" style="background:#22c55e20">&#128278;</div>
+      <div class="ld-step-label">Clasificando zonas de riesgo...</div>
+      <div class="ld-step-bar"><div class="ld-step-fill" style="background:#22c55e"></div></div>
+      <div class="ld-step-ok">&#10003; OK</div>
+    </div>
+    <div class="ld-step">
+      <div class="ld-step-icon" style="background:#00d4ff20">&#9889;</div>
+      <div class="ld-step-label">Iniciando mapa interactivo...</div>
+      <div class="ld-step-bar"><div class="ld-step-fill" style="background:#00d4ff"></div></div>
+      <div class="ld-step-ok">&#10003; OK</div>
+    </div>
+  </div>
+  <div class="ld-progress-wrap">
+    <div class="ld-progress-label">CARGANDO SISTEMA...</div>
+    <div class="ld-progress-track"><div class="ld-progress-bar"></div></div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div id="logo">
+    <div class="logo-icon">🛡</div>
+    <div class="logo-text">
+      <div class="title">Horus HN</div>
+      <div class="sub">Sistema de análisis de Zonas de Riesgo</div>
+    </div>
+  </div>
+
+  <div id="topbar-center">
+    <div class="layer-chip" style="color:var(--ms13);border-color:#ef444430" onclick="toggleLayer('ms13',this)">
+      <div class="dot" style="background:var(--ms13)"></div>MS-13
+    </div>
+    <div class="layer-chip" style="color:var(--b18);border-color:#3b82f630" onclick="toggleLayer('b18',this)">
+      <div class="dot" style="background:var(--b18)"></div>Barrio 18
+    </div>
+    <div class="layer-chip" style="color:var(--mixta);border-color:#f59e0b30" onclick="toggleLayer('mixta',this)">
+      <div class="dot" style="background:var(--mixta)"></div>Mixta
+    </div>
+    <div class="layer-chip" style="color:var(--narco);border-color:#22c55e30" onclick="toggleLayer('narco',this)">
+      <div class="dot" style="background:var(--narco)"></div>Narco
+    </div>
+    <div class="layer-chip" style="color:var(--homicidio);border-color:#dc262630" onclick="toggleLayer('homicidio',this)">
+      <div class="dot" style="background:var(--homicidio)"></div>Homicidios
+    </div>
+    <div class="layer-chip" style="color:var(--robo);border-color:#a855f730" onclick="toggleLayer('robo',this)">
+      <div class="dot" style="background:var(--robo)"></div>Robos
+    </div>
+  </div>
+
+  <div id="topbar-right">
+    <div class="live-dot"></div>
+    <a class="tb-btn" href="ingresar.html">+ Zona</a>
+    <div id="clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- MAPA -->
+  <div id="map-wrap">
+    <div id="mapa"></div>
+
+    <!-- Stats flotantes -->
+    <div id="map-stats">
+      <div class="stat-pill">
+        <div>
+          <div class="val" id="stat-total">0</div>
+          <div class="lbl">Zonas</div>
+        </div>
+      </div>
+      <div class="stat-pill">
+        <div>
+          <div class="val" id="stat-criticas" style="color:#ef4444">0</div>
+          <div class="lbl">Críticas</div>
+        </div>
+      </div>
+      <div class="stat-pill">
+        <div>
+          <div class="val" id="stat-colonias" style="color:var(--accent)">565</div>
+          <div class="lbl">Colonias DC</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leyenda -->
+    <div id="legend">
+      <div class="leg-title">Tipo de amenaza</div>
+      <div class="leg-item" onclick="toggleLayer('ms13')">
+        <div class="leg-color" style="background:#ef4444"></div>MS-13
+      </div>
+      <div class="leg-item" onclick="toggleLayer('b18')">
+        <div class="leg-color" style="background:#3b82f6"></div>Barrio 18
+      </div>
+      <div class="leg-item" onclick="toggleLayer('mixta')">
+        <div class="leg-color" style="background:#f59e0b"></div>Zona mixta
+      </div>
+      <div class="leg-item" onclick="toggleLayer('narco')">
+        <div class="leg-color" style="background:#22c55e"></div>Narco / CO
+      </div>
+      <div class="leg-item" onclick="toggleLayer('homicidio')">
+        <div class="leg-color" style="background:#dc2626"></div>Homicidios
+      </div>
+      <div class="leg-item" onclick="toggleLayer('robo')">
+        <div class="leg-color" style="background:#a855f7"></div>Robos
+      </div>
+      <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">
+        <div class="leg-item">
+          <div class="leg-color" style="background:#94a3b8;opacity:.4"></div>
+          <span style="color:#4a5568">Sin clasificar</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <div class="sh-title">ZONAS CLASIFICADAS</div>
+      <input type="text" id="search-box" placeholder="Buscar colonia..." oninput="filtrarLista(this.value)">
+    </div>
+    <div id="sidebar-list">
+      <div style="padding:16px;text-align:center;color:#4a5568;font-size:11px">Cargando...</div>
+    </div>
+    <div id="type-bars"></div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <div class="sb-item">🗺 <span class="sb-val">Tegucigalpa MDC</span></div>
+  <div class="sb-item">📡 <span class="sb-val">SEDS · ONV-UNAH · DIPAMCO</span></div>
+  <div class="sb-item">📅 <span class="sb-val" id="sb-fecha">—</span></div>
+  <div class="sb-item" style="margin-left:auto">Horus HN v1.0</div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/mapa.js"></script>
+
+<script>
+// ── RELOJ ──────────────────────────────────────────
+function tick() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('es-HN');
+  document.getElementById('sb-fecha').textContent =
+    new Date().toLocaleDateString('es-HN', {day:'2-digit',month:'short',year:'numeric'});
+}
+setInterval(tick, 1000);
+tick();
+
+// ── TOGGLE CAPAS ──────────────────────────────────
+function toggleLayer(tipo, btn) {
+  if (typeof toggleCapaPoligonos === 'function') toggleCapaPoligonos(tipo);
+  if (btn) {
+    btn.classList.toggle('off');
+  } else {
+    document.querySelectorAll('.layer-chip').forEach(function(c) {
+      if (c.textContent.trim().toLowerCase().includes(tipo)) c.classList.toggle('off');
+    });
+  }
+}
+
+// ── OCULTAR LOADER ────────────────────────────────
+setTimeout(function() {
+  var loader = document.getElementById('loader');
+  if (loader) loader.classList.add('hide');
+}, 3800);
+
+// ── SIDEBAR: FILTRAR ──────────────────────────────
+function filtrarLista(q) {
+  var cards = document.querySelectorAll('.col-card');
+  var term  = q.toLowerCase();
+  cards.forEach(function(c) {
+    var nombre = c.querySelector('.cc-name').textContent.toLowerCase();
+    c.style.display = nombre.includes(term) ? '' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>
